@@ -1,0 +1,72 @@
+/* ============================================================
+   DAX MEASURES  —  E-commerce Funnel & Retention dashboard
+   ------------------------------------------------------------
+   In Power BI, create a measure with:  Modeling tab > New measure,
+   then paste one block below. A "measure" is a formula that
+   recalculates as you filter/slice (unlike a static column).
+
+   Create these on the fact_orders table (right-click it > New measure).
+   ============================================================ */
+
+
+/* -- Core KPIs -------------------------------------------------- */
+
+-- How many unique users we acquired.
+Total Users = DISTINCTCOUNT(dim_users[user_id])
+
+-- Users who placed at least one order (i.e. converted).
+Buyers = DISTINCTCOUNT(fact_orders[user_id])
+
+-- Visitor -> buyer conversion. DIVIDE avoids divide-by-zero errors.
+Conversion Rate =
+DIVIDE([Buyers], [Total Users])
+-- format this measure as Percentage (Measure tools > % )
+
+-- Money.
+Total Revenue = SUM(fact_orders[revenue])
+Total Orders  = COUNTROWS(fact_orders)
+
+-- Average order value.
+AOV = DIVIDE([Total Revenue], [Total Orders])
+
+-- Orders per buyer — a simple loyalty signal.
+Orders per Buyer = DIVIDE([Total Orders], [Buyers])
+
+
+/* -- Funnel ----------------------------------------------------
+   The funnel visual is fed by the pre-aggregated funnel table,
+   so the measure is just the sum of that column. Slicing still
+   works if you filter by device, etc.                          */
+
+Users Reached = SUM(funnel[users_reached])
+
+-- % of the top of the funnel (product views) reached at each stage.
+-- ALL() removes the stage filter so we always divide by the top stage.
+Pct of Top =
+VAR TopStage =
+    CALCULATE(SUM(funnel[users_reached]),
+        FILTER(ALL(funnel), funnel[stage_order] = 1))
+RETURN DIVIDE(SUM(funnel[users_reached]), TopStage)
+-- format as Percentage
+
+
+/* -- Retention -------------------------------------------------
+   Cohort table is pre-aggregated. Use retention_pct directly in
+   the Matrix visual (no measure needed), OR use this to be safe: */
+
+Retention % = AVERAGE(cohort_retention[retention_pct])
+-- format as whole number / percentage as you prefer
+
+
+/* -- RFM -------------------------------------------------------- */
+
+Customers = DISTINCTCOUNT(rfm_customers[user_id])
+Segment Revenue = SUM(rfm_customers[monetary])
+
+-- Each segment's share of total revenue (ALL removes the segment filter).
+Revenue Share =
+DIVIDE(
+    SUM(rfm_customers[monetary]),
+    CALCULATE(SUM(rfm_customers[monetary]), ALL(rfm_customers))
+)
+-- format as Percentage

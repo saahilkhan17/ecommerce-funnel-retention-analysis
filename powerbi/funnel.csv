@@ -1,0 +1,5 @@
+stage_order,stage_label,stage,users_reached
+1,1. Product View,product_view,6000
+2,2. Add to Cart,add_to_cart,2435
+3,3. Begin Checkout,begin_checkout,1360
+4,4. Purchase,purchase,924
